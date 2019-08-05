@@ -1,6 +1,21 @@
 defmodule Common.Aliisv.Payment do
   @moduledoc """
   支付宝支付相关api
+
+  配置example
+  config :my_app, :pay,
+  name: :alipay,
+  app_id: "2018xxxxxxxxxxx",
+  sign_type: "RSA2",
+  notify_url: "https://nanana.cn/notify/alipay_isv",
+  seller_id: "",
+  app_auth_token: "",
+  private_key: "-----BEGIN RSA PRIVATE KEY-----
+  xxxxxxxxxx...
+  -----END RSA PRIVATE KEY-----",
+  ali_public_key: "-----BEGIN PUBLIC KEY-----
+  xxxxxxxxxx...
+  -----END PUBLIC KEY-----"
   """
   use GenServer
   require Logger
