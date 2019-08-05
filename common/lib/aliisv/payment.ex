@@ -1,6 +1,6 @@
 defmodule Common.Aliisv.Payment do
   @moduledoc """
-  支付宝相关api
+  支付宝支付相关api
   """
   use GenServer
   require Logger
@@ -175,20 +175,6 @@ defmodule Common.Aliisv.Payment do
       goods_detail: Keyword.get(args, :goods_detail, [])
     }
 
-    # biz_content =
-    #   if Keyword.get(args, :goods_id) != "" do
-    #     Map.put(biz_content, :goods_detail, [
-    #       %{
-    #         goods_id: Keyword.get(args, :goods_id),
-    #         goods_name: Keyword.get(args, :goods_name),
-    #         quantity: 1,
-    #         price: Keyword.get(args, :total_amount) / 100
-    #       }
-    #     ])
-    #   else
-    #     biz_content
-    #   end
-
     res =
       do_request(
         "alipay.trade.create",
@@ -214,20 +200,6 @@ defmodule Common.Aliisv.Payment do
       timeout_express: Keyword.get(args, :timeout_express, "20m"),
       goods_detail: Keyword.get(args, :goods_detail, [])
     }
-
-    # biz_content =
-    #   if Keyword.get(args, :goods_id) != "" do
-    #     Map.put(biz_content, :goods_detail, [
-    #       %{
-    #         goods_id: Keyword.get(args, :goods_id),
-    #         goods_name: Keyword.get(args, :goods_name),
-    #         quantity: 1,
-    #         price: Keyword.get(args, :total_amount) / 100
-    #       }
-    #     ])
-    #   else
-    #     biz_content
-    #   end
 
     res =
       do_request(
@@ -322,16 +294,21 @@ defmodule Common.Aliisv.Payment do
     params =
       if app_auth_token != "", do: Map.put(params, :app_auth_token, app_auth_token), else: params
 
-    full_params =
-      params
-      |> Map.put(:sign, sign(params, state.private_key, state.sign_type))
+    headers = [{"Content-type", "application/x-www-form-urlencoded"}]
 
-    %HTTPotion.Response{body: respBody} =
-      HTTPotion.get("https://openapi.alipay.com/gateway.do", query: full_params)
-
-    respBody
-    |> Poison.decode!()
-    |> Format.stringkey2atom()
+    with sign <- sign(params, state.private_key, state.sign_type),
+         params <- Map.put(params, :sign, sign),
+         req <- URI.encode_query(params),
+         {:ok, resp} <-
+           HTTPoison.get(
+             "https://openapi.alipay.com/gateway.do?" <> req,
+             headers
+           ),
+         %HTTPoison.Response{body: resp_body} <- resp do
+      resp_body
+      |> Poison.decode!()
+      |> Format.stringkey2atom()
+    end
   end
 
   # 请求签名

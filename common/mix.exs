@@ -30,7 +30,7 @@ defmodule Common.MixProject do
       {:timex, "~> 3.1"},
       {:redix, ">= 0.0.0"},
       {:rsa_ex, "~> 0.4"},
-      {:httpotion, "~> 3.1.0"},
+      {:httpoison, "~> 1.5"},
       {:distillery, "~> 2.1.1"},
       {:peerage, "~> 1.0.2"},
       {:logger_file_backend, "~> 0.0.10"},
