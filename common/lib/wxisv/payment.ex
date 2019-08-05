@@ -1,6 +1,25 @@
 defmodule Common.Wxisv.Payment do
   @moduledoc """
   微信支付相关API
+
+  配置示例
+  config :my_app, :pay,
+  name: :wx,
+  appid: "wx123456",
+  mch_id: "123456",
+  key: "9ot34qkz0o9qxo4tvdjp9g98um4xxxxx",
+  app_secret: "be8e3bb33e377fba6ae528573b39a389",
+  notify_url: "https://something.cn/notify/wxpay_isv",
+  sign_type: "MD5",
+  ssl: [
+    ca_cert: nil,
+    cert: "-----BEGIN CERTIFICATE-----
+    xxx
+    -----END CERTIFICATE-----",
+    key: "-----BEGIN PRIVATE KEY-----
+    xxx
+    -----END PRIVATE KEY-----"
+  ]
   """
   use GenServer
   require Logger
