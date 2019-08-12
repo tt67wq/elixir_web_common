@@ -12,7 +12,7 @@ defmodule Common.RedisCache do
   @moduledoc """
   redis cache
 
-  Config example
+  ## Config example
   ```
   config :my_app, :cache,
     name: :cache,
@@ -20,7 +20,7 @@ defmodule Common.RedisCache do
     port: 6379
   ```
 
-  Usage:
+  ## Usage:
   ```
   def start(_type, _args) do
     # List all child processes to be supervised
@@ -155,13 +155,13 @@ defmodule Common.EtsCache do
   进程中断则所有的缓存丢失，如果想做持久化需要自己再做二次开发
 
 
-  Config example
+  ## Config example
   ```
   config :my_app, :cache,
     name: :cache
   ```
 
-  Usage:
+  ## Usage:
   ```
   def start(_type, _args) do
     # List all child processes to be supervised
