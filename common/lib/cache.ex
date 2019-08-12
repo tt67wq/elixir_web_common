@@ -76,9 +76,9 @@ defmodule Common.RedisCache do
   @doc """
   add a new cache key/value
 
-  * `name` - cache service name, genserver name
-  * `key`  - key of cache
-  * `value` - value of cache
+  * `name`   - cache service name, genserver name
+  * `key`    - key of cache
+  * `value`  - value of cache
   * `expire` - how many seconds this cache pair can survive 
 
   ## Examples
@@ -95,7 +95,7 @@ defmodule Common.RedisCache do
   get cache value by key
 
   * `name` - cache service name, genserver name
-  * `key` - key of cache
+  * `key`  - key of cache
 
   ## Examples
 
@@ -118,7 +118,7 @@ defmodule Common.RedisCache do
   check if key in cache table
 
   * `name` - cache service name, genserver name
-  * `key` - key of cache
+  * `key`  - key of cache
 
   ## Examples
 
@@ -137,7 +137,7 @@ defmodule Common.RedisCache do
   drop a cache pair
 
   * `name` - cache service name, genserver name
-  * `key` - key of cache
+  * `key`  - key of cache
 
   ## Examples
 
@@ -194,9 +194,9 @@ defmodule Common.EtsCache do
   @doc """
   add a new cache key/value
 
-  * `name` - cache service name, genserver name
-  * `key`  - key of cache
-  * `value` - value of cache
+  * `name`   - cache service name, genserver name
+  * `key`    - key of cache
+  * `value`  - value of cache
   * `expire` - how many seconds this cache pair can survive 
 
   ## Examples
@@ -213,7 +213,7 @@ defmodule Common.EtsCache do
   get cache value by key
 
   * `name` - cache service name, genserver name
-  * `key` - key of cache
+  * `key`  - key of cache
 
   ## Examples
 
@@ -232,7 +232,7 @@ defmodule Common.EtsCache do
   check if key in cache table
 
   * `name` - cache service name, genserver name
-  * `key` - key of cache
+  * `key`  - key of cache
 
   ## Examples
 
@@ -248,7 +248,7 @@ defmodule Common.EtsCache do
   drop a cache pair
 
   * `name` - cache service name, genserver name
-  * `key` - key of cache
+  * `key`  - key of cache
 
   ## Examples
 

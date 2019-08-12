@@ -1,5 +1,28 @@
 defmodule Common.Ratelimit do
-  @moduledoc false
+  @moduledoc """
+  令牌桶限流器，基于Redis存储
+
+  ## Config Example
+  ```
+  config :my_app, :ratelimit,
+    host: "localhost",
+    port: 6379
+  ```
+
+  ## Usage
+  ```
+  def start(_type, _args) do
+    children = [
+      {Ratelimit, Application.get_env(:my_app, :ratelimit)}
+    ]
+
+    children = children ++ payment_worker() ++ caches()
+    opts = [strategy: :one_for_one, name: MyApp.Supervisor]
+    Supervisor.start_link(children, opts)
+  end
+  ```
+
+  """
 
   use Supervisor
   alias Common.{Crypto, TimeTool}
@@ -42,17 +65,34 @@ defmodule Common.Ratelimit do
   end
 
   #### real part ####
-  @doc """
-  name: 限流器名称
-  rate: 每过多少毫秒注入一个新令牌
-  size: 桶容量
-  """
   @spec register(atom(), integer(), integer()) :: boolean()
+  @doc """
+  register a ratelimiter, save it in ets
+
+  * `name` - server name
+  * `rate` - how many milliseconds does it take to generate a token
+  * `size` - maximum of the token pool
+
+  ## Examples
+
+  iex> Common.Ratelimit.register(:limiter, 1000, 10)
+  true
+  """
   def register(name, rate, size) do
     :ets.insert(:rate_pool, {name, rate, size})
   end
 
   @spec take_one(atom()) :: boolean()
+  @doc """
+  take a token from pool, if failed, means ratelimit is working
+
+  * `name` - name of the server
+
+  ## Examples
+
+  iex> Common.Ratelimit.take_one(:limiter)
+  true
+  """
   def take_one(name) do
     with [{name, rate, size}] <- :ets.lookup(:rate_pool, name),
          ts <- TimeTool.timestamp(:milli_seconds),
