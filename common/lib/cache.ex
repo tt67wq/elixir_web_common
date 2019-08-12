@@ -282,7 +282,11 @@ defmodule Common.EtsCache do
   """
   def handle_info(:work, state) do
     now = TimeTool.timestamp(:seconds)
-    :ets.match_delete(state.name, {:_, :_, now})
+
+    state.name
+    |> :ets.select([{{:"$1", :_, :"$2"}, [{:<, :"$2", now}], [:"$1"]}])
+    |> Enum.map(fn x -> :ets.delete(state.name, x) end)
+
     schedule_work(@beat_delta)
     {:noreply, state}
   end
