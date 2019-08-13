@@ -1,6 +1,28 @@
 defmodule Common.RedisLock do
   @moduledoc """
   单机redis分布式锁
+  ## Config example
+  ```
+  config :my_app, :rds_lock,
+    name: :lock,
+    host: "localhost",
+    port: 6379
+  ```
+
+  ## Usage:
+  ```
+  def start(_type, _args) do
+    # List all child processes to be supervised
+    children = [
+      {RedisLock, Application.get_env(:my_app, :rds_lock)},
+    ]
+
+    # See https://hexdocs.pm/elixir/Supervisor.html
+    # for other strategies and supported options
+    opts = [strategy: :one_for_one, name: MyApp.Supervisor]
+    Supervisor.start_link(children, opts)
+  end
+
   """
   require Logger
   use Supervisor
@@ -47,7 +69,7 @@ defmodule Common.RedisLock do
 
   #### lock part ####
 
-  def helper_hash(), do: Crypto.sha(@release_script)
+  defp helper_hash(), do: Crypto.sha(@release_script) |> Base.encode16(case: :lower)
 
   def install_script(name) do
     case command(name, ["SCRIPT", "LOAD", @release_script]) do
@@ -66,7 +88,17 @@ defmodule Common.RedisLock do
   end
 
   @doc """
-  use a random string as value of resource
+  lock a lock on a resource last for ttl millseconds, this function 
+  returns a random string as the secret to unlock
+
+  * `name`     - name of genserver
+  * `resource` - name of a resource
+  * `ttl`      - after how many millseconds to free this lock
+
+  ## Examples
+
+  iex> Common.RedisLock.lock(:lock, "foo", 1000)
+  {:ok, "r9j_XinmrB"}
   """
   @spec lock(atom(), String.t(), integer()) :: {:ok, String.t()} | {:error, any()}
   def lock(name, resource, ttl) do
@@ -93,8 +125,20 @@ defmodule Common.RedisLock do
     end
   end
 
+  @doc """
+  free a lock by secret
+
+  * `name` - name of genserver
+  * `resource` - name of resource
+  * `secret` - value returned by lock function
+
+  ## Examples
+
+  iex> Common.RedisLock.unlock(:lock, "foo", "JFaguzdH1Y")
+  {:ok, 1}
+  """
   @spec unlock(atom(), String.t(), String.t()) :: {:ok, integer()}
-  def unlock(name, resource, value) do
-    command(name, ["EVALSHA", helper_hash(), "1", resource, value])
+  def unlock(name, resource, secret) do
+    command(name, ["EVALSHA", helper_hash(), "1", resource, secret])
   end
 end
