@@ -1,10 +1,11 @@
 defmodule Common.Wxisv.Payment do
   @moduledoc """
-  微信支付相关API
+  微信服务商模式支付相关API
+
 
   配置示例
   config :my_app, :pay,
-  name: :wx,
+  name: :wxisv,
   appid: "wx123456",
   mch_id: "123456",
   key: "9ot34qkz0o9qxo4tvdjp9g98um4xxxxx",
@@ -23,23 +24,170 @@ defmodule Common.Wxisv.Payment do
   """
   use GenServer
   require Logger
-  alias Common.{Crypto, Format, Xml}
-
-  @gateway "https://api.mch.weixin.qq.com"
+  alias Common.{Crypto, Wxisv.Util}
 
   def start_link(args) do
     {name, args} = Keyword.pop(args, :name, __MODULE__)
     GenServer.start_link(__MODULE__, args, name: name)
   end
 
-  def query_order(server, order_no) do
-    GenServer.call(server, {:query, [out_trade_no: order_no]})
-  end
+  @doc """
+  统一下单
+  商户系统先调用该接口在微信支付服务后台生成预支付交易单，
+  返回正确的预支付交易会话标识后再按Native、JSAPI、APP等不同场景生成交易串调起支付
 
-  def refund_order(server, order_no, total_fee, refund_fee) do
+  * server           - name of genserver
+  * sub_mch_id       - 微信支付分配的子商户号
+  * body             - 商品或支付单简要描述，格式要求：门店品牌名-城市分店名-实际商品名称
+  * detail           - 单品优惠功能字段
+  * out_trade_no     - 商户自定义单号
+  * total_fee        - 总价，单位为分
+  * spbill_create_ip - 终端IP
+  * notify_url       - 结果回调地址
+  * trade_type       - 支付方式 JSAPI -JSAPI支付 NATIVE -Native支付 APP -APP支付
+  * product_id       - trade_type=NATIVE时，此参数必传。此id为二维码中包含的商品ID，商户自行定义。
+  * openid           - trade_type=JSAPI，此参数必传，用户在主商户appid下的唯一标识。openid和sub_openid可以选传其中之一，如果选择传sub_openid,则必须传sub_appid
+  * sub_openid       - trade_type=JSAPI，此参数必传，用户在主商户appid下的唯一标识。openid和sub_openid可以选传其中之一，如果选择传sub_openid,则必须传sub_appid
+
+  ## Examples
+  """
+  def unifiedorder(
+        server,
+        sub_mch_id,
+        body,
+        detail,
+        out_trade_no,
+        total_fee,
+        spbill_create_ip,
+        notify_url,
+        trade_type,
+        product_id,
+        openid,
+        sub_openid
+      ) do
     GenServer.call(
       server,
-      {:refund, [out_trade_no: order_no, total_fee: total_fee, refund_fee: refund_fee]}
+      {:unifiedorder,
+       [
+         sub_mch_id: sub_mch_id,
+         body: body,
+         detail: detail,
+         out_trade_no: out_trade_no,
+         total_fee: total_fee,
+         spbill_create_ip: spbill_create_ip,
+         notify_url: notify_url,
+         trade_type: trade_type,
+         product_id: product_id,
+         openid: openid,
+         sub_openid: sub_openid
+       ]}
+    )
+  end
+
+  @doc """
+  收银员使用扫码设备读取微信用户付款码以后，二维码或条码信息会传送至商户收银台，
+  由商户收银台或者商户后台调用该接口发起支付。
+
+  * server           - name of genserver
+  * sub_mch_id       - 微信支付分配的子商户号
+  * body             - 商品或支付单简要描述，格式要求：门店品牌名-城市分店名-实际商品名称
+  * detail           - 单品优惠功能字段
+  * out_trade_no     - 商户自定义单号
+  * total_fee        - 总价，单位为分
+  * spbill_create_ip - 终端IP
+  * auth_code        - 扫码支付授权码，设备读取用户微信中的条码或者二维码信息
+
+  ## Examples
+
+  iex> Common.Wxisv.Payment.micropay(:wxisv, "1487469312", "image形象店-深圳腾大-QQ公仔", "", "s4stest1234", 10, "220.184.130.30", "134680050634385495")
+  {:ok,
+  %{
+     appid: "wxa06cadd4aa4ad40f",
+     err_code: "USERPAYING",
+     err_code_des: "需要用户输入支付密码",
+     mch_id: "1424355602",
+     nonce_str: "k7zK9ey5MGsicrFe",
+     result_code: "FAIL",
+     return_code: "SUCCESS",
+     return_msg: "OK",
+     sign: "E5CD0972C2632DD10D3CF6CF980CA87D",
+     sub_mch_id: "1487469312"
+  }}
+
+  """
+  def micropay(
+        server,
+        sub_mch_id,
+        body,
+        detail,
+        out_trade_no,
+        total_fee,
+        spbill_create_ip,
+        auth_code
+      ) do
+    GenServer.call(
+      server,
+      {:micropay,
+       [
+         sub_mch_id: sub_mch_id,
+         body: body,
+         detail: detail,
+         out_trade_no: out_trade_no,
+         total_fee: total_fee,
+         spbill_create_ip: spbill_create_ip,
+         auth_code: auth_code
+       ]}
+    )
+  end
+
+  @doc """
+  根据商户单号查询订单
+
+  * server       - name of genserver
+  * out_trade_no - 商户自定义订单号 
+
+  ## Examples
+
+  iex> Common.Wxisv.Payment.query_out(:wxisv, "1487469312", "s4stest1235")
+  {:ok,
+  %{
+     appid: "wxa06cadd4aa4ad40f",
+     attach: "",
+     bank_type: "CFT",
+     cash_fee: "1",
+     cash_fee_type: "CNY",
+     fee_type: "CNY",
+     is_subscribe: "Y",
+     mch_id: "1424355602",
+     nonce_str: "2irt2TRYpGeIvVPC",
+     openid: "oKrTMwYZRSB1e4zBpvaZy6UXmzpI",
+     out_trade_no: "s4stest1235",
+     result_code: "SUCCESS",
+     return_code: "SUCCESS",
+     return_msg: "OK",
+     sign: "52A4E89376094256CF5A88E46F3FC2F0",
+     sub_mch_id: "1487469312",
+     time_end: "20190829115402",
+     total_fee: "1",
+     trade_state: "SUCCESS",
+     trade_state_desc: "支付成功",
+     trade_type: "MICROPAY",
+     transaction_id: "4200000372201908290017282113"
+  }}
+
+  """
+  def query_out(server, sub_mch_id, out_trade_no) do
+    GenServer.call(server, {:query, [sub_mch_id: sub_mch_id, out_trade_no: out_trade_no]})
+  end
+
+  def query_wx(server, sub_mch_id, transaction_id) do
+    GenServer.call(server, {:query, [sub_mch_id: sub_mch_id, transaction_id: transaction_id]})
+  end
+
+  def refund_order(server, out_trade_no, total_fee, refund_fee) do
+    GenServer.call(
+      server,
+      {:refund, [out_trade_no: out_trade_no, total_fee: total_fee, refund_fee: refund_fee]}
     )
   end
 
@@ -59,34 +207,42 @@ defmodule Common.Wxisv.Payment do
      }}
   end
 
-  # 签名
-  defp sign(params, key, sign_type) do
-    string2sign =
-      params
-      |> Enum.into(%{}, fn {k, v} -> {to_string(k), v} end)
-      |> Format.sort_and_concat(true)
+  @impl true
+  def handle_call({:micropay, args}, _from, state) do
+    params = %{
+      appid: state.appid,
+      mch_id: state.mch_id,
+      sub_mch_id: Keyword.get(args, :sub_mch_id, ""),
+      body: Keyword.get(args, :body, ""),
+      detail: Keyword.get(args, :detail, ""),
+      out_trade_no: Keyword.get(args, :out_trade_no, ""),
+      total_fee: Keyword.get(args, :total_fee, 0),
+      spbill_create_ip: Keyword.get(args, :spbill_create_ip, ""),
+      auth_code: Keyword.get(args, :auth_code, "")
+    }
 
-    string2sign = string2sign <> "&key=#{key}"
-    # Logger.info("base string ==> #{string2sign}")
-
-    case sign_type do
-      "MD5" -> Crypto.md5(string2sign) |> Base.encode16(case: :upper)
-      "HMAC-SHA256" -> Crypto.hmac_sha256(key, string2sign) |> Base.encode16(case: :upper)
-    end
+    {:reply, Util.do_request("/pay/micropay", params, state), state}
   end
 
-  defp do_request(method, params, state) do
-    headers = [{"Content-type", "application/x-www-form-urlencoded"}]
+  @impl true
+  def handle_call({:unifiedorder, args}, _from, state) do
+    params = %{
+      appid: state.appid,
+      mch_id: state.mch_id,
+      sub_mch_id: Keyword.get(args, :sub_mch_id, ""),
+      body: Keyword.get(args, :body, ""),
+      detail: Keyword.get(args, :detail, ""),
+      out_trade_no: Keyword.get(args, :out_trade_no, ""),
+      total_fee: Keyword.get(args, :total_fee, 0),
+      spbill_create_ip: Keyword.get(args, :spbill_create_ip, ""),
+      notify_url: Keyword.get(args, :notify_url, state.notify_url),
+      trade_type: Keyword.get(args, :trade_type, ""),
+      product_id: Keyword.get(args, :product_id, ""),
+      openid: Keyword.get(args, :openid, ""),
+      sub_openid: Keyword.get(args, :sub_openid, "")
+    }
 
-    with params <- Map.put(params, :nonce_str, Crypto.random_string(16)),
-         params <- Map.put(params, :sign, sign(params, state.key, state.sign_type)),
-         {:ok, resp} <-
-           HTTPoison.post(@gateway <> method, Format.map2xml(params), headers,
-             ssl: Crypto.load_ssl(state.ssl)
-           ),
-         %HTTPoison.Response{body: resp_body} <- resp do
-      Xml.parse(resp_body)
-    end
+    {:reply, Util.do_request("/pay/unifiedorder", params, state), state}
   end
 
   @impl true
@@ -94,11 +250,12 @@ defmodule Common.Wxisv.Payment do
     params = %{
       appid: state.appid,
       mch_id: state.mch_id,
+      sub_mch_id: Keyword.get(args, :sub_mch_id, ""),
       transaction_id: Keyword.get(args, :transaction_id, ""),
       out_trade_no: Keyword.get(args, :out_trade_no, "")
     }
 
-    {:reply, do_request("/pay/orderquery", params, state), state}
+    {:reply, Util.do_request("/pay/orderquery", params, state), state}
   end
 
   @impl true
@@ -106,6 +263,7 @@ defmodule Common.Wxisv.Payment do
     params = %{
       appid: state.appid,
       mch_id: state.mch_id,
+      sub_mch_id: Keyword.get(args, :sub_mch_id, ""),
       transaction_id: Keyword.get(args, :transaction_id, ""),
       out_trade_no: Keyword.get(args, :out_trade_no, ""),
       total_fee: Keyword.get(args, :total_fee, 0),
@@ -113,6 +271,6 @@ defmodule Common.Wxisv.Payment do
       refund_fee: Keyword.get(args, :refund_fee, 0)
     }
 
-    {:reply, do_request("/secapi/pay/refund", params, state), state}
+    {:reply, Util.do_request("/secapi/pay/refund", params, state), state}
   end
 end
