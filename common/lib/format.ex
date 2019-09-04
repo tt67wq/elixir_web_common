@@ -2,6 +2,10 @@ defmodule Common.Format do
   @moduledoc """
   format tools
   """
+  import Record, only: [defrecord: 2, extract: 2]
+
+  defrecord :xml_element, extract(:xmlElement, from_lib: "xmerl/include/xmerl.hrl")
+  defrecord :xml_text, extract(:xmlText, from_lib: "xmerl/include/xmerl.hrl")
 
   @doc """
   map key转为驼峰风格
@@ -48,27 +52,47 @@ defmodule Common.Format do
   end
 
   @doc """
-  xml 转 map
-  """
-  def xml2map(xml) do
-    re = ~r/<(?<k>.+)>(?<v>.+)<\/(.+)>/
+  将xml转为map
 
-    xml
-    |> String.slice(5..-8)
-    |> String.split("\n")
-    |> Enum.map(fn x -> Regex.named_captures(re, x) end)
-    |> Enum.reduce(%{}, fn x, acc -> Map.put(acc, Map.get(x, "k"), cdata(Map.get(x, "v"))) end)
-    |> stringkey2atom()
+  * xml_string   - xml文本
+  * root_element - 根节点
+
+  ## Examples
+
+  iex> xml = "<xml><return_code><![CDATA[SUCCESS]]></return_code><return_msg><![CDATA[OK]]></return_msg></xml>"
+  iex> Common.Format.xml_parse(xml)
+  {:ok, %{return_code: "SUCCESS", return_msg: "OK"}}
+  """
+  @spec xml_parse(String.t(), String.t()) :: {:ok, map}
+  def xml_parse(xml_string, root_element \\ "xml") when is_binary(xml_string) do
+    {doc, _} =
+      xml_string
+      |> :binary.bin_to_list()
+      |> :xmerl_scan.string()
+
+    parsed_xml = extract_doc(doc, root_element)
+
+    {:ok, parsed_xml}
   end
 
-  defp cdata(str) do
-    if String.contains?(str, "CDATA") do
-      ~r/\<\!\[CDATA\[(?<v>.*)\]\]\>/
-      |> Regex.named_captures(str)
-      |> Map.get("v")
-    else
-      str
-    end
+  defp extract_doc(doc, root) do
+    "/#{root}/child::*"
+    |> String.to_charlist()
+    |> :xmerl_xpath.string(doc)
+    |> Enum.into(%{}, &extract_element/1)
+  end
+
+  defp extract_element(element) do
+    name = xml_element(element, :name)
+
+    [content] = xml_element(element, :content)
+
+    value =
+      content
+      |> xml_text(:value)
+      |> String.Chars.to_string()
+
+    {name, value}
   end
 
   @doc """

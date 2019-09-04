@@ -2,7 +2,7 @@ defmodule Common.Aliisv.Util do
   @moduledoc """
   工具函数
   """
-  alias Common.{TimeTool, Crypto, Format}
+  alias Common.{TimeTool, Format}
   # 通用请求行为
   def do_request(method, biz_content, notify_url, app_auth_token, state) do
     params = %{

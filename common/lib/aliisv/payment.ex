@@ -19,7 +19,7 @@ defmodule Common.Aliisv.Payment do
   """
   use GenServer
   require Logger
-  alias Common.{TimeTool, Crypto, Format, Aliisv.Util}
+  alias Common.{Crypto, Format, Aliisv.Util}
 
   @type create_resp :: %{
           alipay_trade_create_response: %{
