@@ -2,43 +2,23 @@ defmodule Common.Aliisv.Payment do
   @moduledoc """
   支付宝支付相关api
 
-  配置example
+  ## Example
   config :my_app, :pay,
-  name: :alipay,
-  app_id: "2018xxxxxxxxxxx",
-  sign_type: "RSA2",
-  notify_url: "https://nanana.cn/notify/alipay_isv",
-  seller_id: "",
-  app_auth_token: "",
-  private_key: "-----BEGIN RSA PRIVATE KEY-----
-  xxxxxxxxxx...
-  -----END RSA PRIVATE KEY-----",
-  ali_public_key: "-----BEGIN PUBLIC KEY-----
-  xxxxxxxxxx...
-  -----END PUBLIC KEY-----"
+    name: :alipay,
+    app_id: "2018xxxxxxxxxxx",
+    sign_type: "RSA2",
+    notify_url: "https://nanana.cn/notify/alipay_isv",
+    seller_id: "",
+    private_key: "-----BEGIN RSA PRIVATE KEY-----
+    xxxxxxxxxx...
+    -----END RSA PRIVATE KEY-----",
+    ali_public_key: "-----BEGIN PUBLIC KEY-----
+    xxxxxxxxxx...
+    -----END PUBLIC KEY-----"
   """
   use GenServer
   require Logger
-  alias Common.{Crypto, Format, Aliisv.Util}
-
-  @type create_resp :: %{
-          alipay_trade_create_response: %{
-            code: String.t(),
-            msg: String.t(),
-            out_trade_no: String.t(),
-            trade_no: String.t()
-          },
-          sign: String.t()
-        }
-  @type precreate_resp :: %{
-          alipay_trade_precreate_response: %{
-            code: String.t(),
-            msg: String.t(),
-            out_trade_no: String.t(),
-            qr_code: String.t()
-          },
-          sign: String.t()
-        }
+  alias Common.{Format, Crypto, Aliisv.Util}
 
   def start_link(args) do
     {name, args} = Keyword.pop(args, :name, __MODULE__)
@@ -49,109 +29,262 @@ defmodule Common.Aliisv.Payment do
 
   @doc """
   普通下单
+
+  参考文档：https://docs.open.alipay.com/api_1/alipay.trade.create
+
+  * server - 服务名
+  * args
+    * app_auth_token  - 授权商户令牌 若不传，则付钱到主帐号
+    * out_trade_no    - 商户订单号
+    * buyer_id        - 支付宝帐号
+    * total_amount    - 总金额 单位分
+    * discount_amount - 可打折金额 单位分
+    * subject         - 订单标题
+    * body            - 对交易或商品的描述
+    * timeout_express - 该笔订单允许的最晚付款时间 20m
+    * goods_detail    - 订单包含的商品列表信息
+    * notify_url      - 回执地址
+
+  ## Example
+  iex> Common.Aliisv.Payment.create(:aliisv, 
+    out_trade_no: "test134",    
+    app_auth_token: "201905BBc2756c2e07b144ce8dbc746a48177X09",
+    buyer_id: "2088202596034906",
+    total_amount: 10,
+    discount_amount: 0,
+    subject: "测试单",
+    body: "测试测试"
+  )
+  {:ok,
+   %{
+     alipay_trade_create_response: %{
+       code: "10000",
+       msg: "Success",
+       out_trade_no: "test134",
+       trade_no: "2019090522001434900576854732"
+     },
+     sign: "xxx"
+   }}
   """
-  @spec create(
-          atom(),
-          String.t(),
-          integer(),
-          String.t(),
-          String.t(),
-          String.t(),
-          [map()]
-        ) :: create_resp
-  def create(server, trade_no, total_amount, buyer_id, subject, body, goods_detail) do
-    GenServer.call(
-      server,
-      {:create,
-       [
-         out_trade_no: trade_no,
-         total_amount: total_amount,
-         buyer_id: buyer_id,
-         subject: subject,
-         body: body,
-         goods_detail: goods_detail
-       ]}
-    )
+  def create(server, args) do
+    GenServer.call(server, {:create, args})
   end
 
   @doc """
-  生成付款码
+  下单生成待支付链接
+
+  * server - 服务名
+  * args
+    * app_auth_token  - 授权商户令牌 若不传，则付钱到主帐号
+    * out_trade_no    - 商户订单号
+    * total_amount    - 总金额 单位分
+    * discount_amount - 可打折金额 单位分
+    * subject         - 订单标题
+    * body            - 对交易或商品的描述
+    * timeout_express - 该笔订单允许的最晚付款时间 20m
+    * goods_detail    - 订单包含的商品列表信息
+    * notify_url      - 回执地址
+
+  ## Examples
+
+  iex> Common.Aliisv.Payment.precreate(:aliisv, 
+    out_trade_no: "test135",    
+    app_auth_token: "201905BBc2756c2e07b144ce8dbc746a48177X09",
+    total_amount: 10,
+    discount_amount: 0,
+    subject: "测试单",
+    body: "测试测试"
+  )
+  {:ok,
+   %{
+     alipay_trade_precreate_response: %{
+       code: "10000",
+       msg: "Success",
+       out_trade_no: "test135",
+       qr_code: "https://qr.alipay.com/bax082708jnbruc5qj8u800c"
+     },
+     sign: "tPVvo0LZkAIlUP4rCQ9J7Rj5eH9wkXT5a31Z/TJgL8vsb3u/lL3tvudc2h5Fi7Pgc9wndCgY8WI4Mcob66Isr8otU7IfvQ0k13p0LgHyTd481yW23AVZfGIPpEb93EU5n92rXaNQ46Chq6y1+41RlobvbAQG88lBiPp1pZGeBlM="
+   }}
   """
-  @spec precreate(
-          atom(),
-          String.t(),
-          integer(),
-          String.t(),
-          String.t(),
-          String.t(),
-          [map()]
-        ) :: precreate_resp
-  def precreate(server, trade_no, total_amount, buyer_id, subject, body, goods_detail) do
-    GenServer.call(
-      server,
-      {:precreate,
-       [
-         out_trade_no: trade_no,
-         total_amount: total_amount,
-         buyer_id: buyer_id,
-         subject: subject,
-         body: body,
-         goods_detail: goods_detail
-       ]}
-    )
-  end
+  def precreate(server, args), do: GenServer.call(server, {:precreate, args})
 
   @doc """
-  查询订单信息
+  收银员使用扫码设备读取用户手机支付宝“付款码”/声波获取设备（如麦克风）
+  读取用户手机支付宝的声波信息后，
+  将二维码或条码信息/声波信息通过本接口上送至支付宝发起支付。
+
+  参考文档：https://docs.open.alipay.com/api_1/alipay.trade.pay/
+
+  * server - 服务名
+  * args
+    * app_auth_token  - 授权商户令牌 若不传，则付钱到主帐号
+    * auth_code       - 支付宝条形码
+    * out_trade_no    - 商户订单号
+    * total_amount    - 总金额 单位分
+    * discount_amount - 可打折金额 单位分
+    * subject         - 订单标题
+    * body            - 对交易或商品的描述
+    * timeout_express - 该笔订单允许的最晚付款时间 20m
+    * goods_detail    - 订单包含的商品列表信息
+    * notify_url      - 回执地址
+
+  ## Examples
+
+  iex> Common.Aliisv.Payment.scan_pay(:aliisv, 
+    out_trade_no: "test137",
+    auth_code: "282278693772404227",
+    app_auth_token: "201905BBc2756c2e07b144ce8dbc746a48177X09",
+    total_amount: 10    ,
+    discount_amount: 0,
+    subject: "测试单",
+    body: "测试测试"
+  )
+  {:ok,
+  %{
+    alipay_trade_pay_response: %{
+      buyer_logon_id: "tt6***@126.com",
+      buyer_pay_amount: "0.10",
+      buyer_user_id: "2088202596034906",
+      code: "10000",
+      fund_bill_list: [%{"amount" => "0.10", "fund_channel" => "PCREDIT"}],
+      gmt_payment: "2019-09-05 13:24:43",
+      invoice_amount: "0.10",
+      msg: "Success",
+      out_trade_no: "test137",
+      point_amount: "0.00",
+      receipt_amount: "0.10",
+      total_amount: "0.10",
+      trade_no: "2019090522001434900578700599"
+    },
+    sign: "xxx"
+  }}
+
+  iex> Common.Aliisv.Payment.scan_pay(:aliisv, 
+    out_trade_no: "test138",
+    auth_code: "282278693772404222",
+    app_auth_token: "201905BBc2756c2e07b144ce8dbc746a48177X09",
+    total_amount: 200000,
+    discount_amount: 0,
+    subject: "测试单",
+    body: "测试测试"
+  )
+  {:ok,
+   %{
+     alipay_trade_pay_response: %{
+       buyer_logon_id: "tt6***@126.com",
+       buyer_pay_amount: "0.00",
+       buyer_user_id: "2088202596034906",
+       code: "10003",
+       invoice_amount: "0.00",
+       msg: " order success pay inprocess",
+       out_trade_no: "test138",
+       point_amount: "0.00",
+       receipt_amount: "0.00",
+       total_amount: "2000.00",
+       trade_no: "2019090522001434900578804384"
+     },
+     sign: "r9tuLTWGXmzW29goe4dvv9SLp7Mln7gab/Mh6MTCEopMDRf04RYE6zbtWgbK9xWdNI4o6+PUjLe34gXZkwC789+mqYvjuMf5M606NjcBDsLt2aq9ho4KwyD1bjX2vhkbBuS3tue7WL/ncHv0DbCHz7eNjzt2eacGM/h2ybLSrC0="
+   }}
+
   """
-  def query(server, order_no, flag \\ :out) do
-    case flag do
-      :out -> query_by_out_trade_no(server, order_no)
-      :ali -> query_by_trade_no(server, order_no)
-    end
-  end
+  def scan_pay(server, args), do: GenServer.call(server, {:scan_pay, args})
 
-  defp query_by_out_trade_no(server, out_trade_no) do
-    GenServer.call(server, {:query, [out_trade_no: out_trade_no]})
-  end
+  @doc """
+  查询订单
 
-  defp query_by_trade_no(server, trade_no) do
-    GenServer.call(server, {:query, [trade_no: trade_no]})
-  end
+  * server - 服务名
+  * args
+    * app_auth_token - 授权商户令牌 若不传，则付钱到主帐号
+    * trade_no       - 支付宝单号
+    * out_trade_no   - 商户单号 与支付宝单号二选一
+
+  ## Examples
+
+  iex> Common.Aliisv.Payment.query(:aliisv, 
+     app_auth_token: "201905BBc2756c2e07b144ce8dbc746a48177X09", 
+     trade_no: "2019090522001434900576854732"
+  )
+  {:ok,
+   %{
+     alipay_trade_query_response: %{
+       buyer_logon_id: "tt6***@126.com",
+       buyer_pay_amount: "0.00",
+       buyer_user_id: "2088202596034906",
+       code: "10000",
+       invoice_amount: "0.00",
+       msg: "Success",
+       out_trade_no: "test134",
+       point_amount: "0.00",
+       receipt_amount: "0.00",
+       total_amount: "0.10",
+       trade_no: "2019090522001434900576854732",
+       trade_status: "WAIT_BUYER_PAY"
+     },
+     sign: "xxx"
+   }}
+
+  iex> Common.Aliisv.Payment.query(:aliisv, 
+     app_auth_token: "201905BBc2756c2e07b144ce8dbc746a48177X09", 
+     trade_no: "2019090522001434900576854733"
+  )
+  {:ok,
+   %{
+     alipay_trade_query_response: %{
+       buyer_pay_amount: "0.00",
+       code: "40004",
+       invoice_amount: "0.00",
+       msg: "Business Failed",
+       point_amount: "0.00",
+       receipt_amount: "0.00",
+       sub_code: "ACQ.TRADE_NOT_EXIST",
+       sub_msg: "交易不存在"
+     },
+     sign: "xxx"
+   }}
+  """
+  def query(server, args), do: GenServer.call(server, {:query, args})
 
   @doc """
   退款
-  """
-  @spec refund(atom(), String.t(), integer(), String.t()) :: %{
-          alipay_trade_refund_response: map(),
-          sign: String.t()
-        }
-  def refund(server, trade_no, refund_amount, refund_reason) do
-    GenServer.call(server, {
-      :refund,
-      [
-        out_trade_no: trade_no,
-        refund_amount: refund_amount,
-        refund_reason: refund_reason
-      ]
-    })
-  end
 
-  @spec refund(atom(), String.t(), integer(), String.t(), String.t()) :: %{
-          alipay_trade_refund_response: map(),
-          sign: String.t()
-        }
-  def refund(server, trade_no, refund_amount, refund_reason, request_no) do
-    GenServer.call(server, {
-      :refund,
-      [
-        out_trade_no: trade_no,
-        refund_amount: refund_amount,
-        refund_reason: refund_reason,
-        out_request_no: request_no
-      ]
-    })
-  end
+  * server - 服务名
+  * args
+    * app_auth_token - 授权商户令牌 若不传，则付钱到主帐号
+    * trade_no       - 支付宝单号
+    * out_trade_no   - 商户单号 与支付宝单号二选一
+    * refund_amount  - 退款金额 分
+    * refund_reason  - 退款理由
+    * out_refund_no  - 退款编号， 不传则随机生成
+
+  ## Examples
+
+  iex> Common.Aliisv.Payment.refund(:aliisv, 
+         app_auth_token: "201905BBc2756c2e07b144ce8dbc746a48177X09",
+	 out_trade_no: "test135",
+	 refund_amount: 1,
+	 refund_reason: "test"
+  )
+  {:ok,
+   %{
+     alipay_trade_refund_response: %{
+       buyer_logon_id: "tt6***@126.com",
+       buyer_user_id: "2088202596034906",
+       code: "10000",
+       fund_change: "Y",
+       gmt_refund_pay: "2019-09-05 11:28:16",
+       msg: "Success",
+       out_trade_no: "test135",
+       refund_detail_item_list: [
+  %{"amount" => "0.01", "fund_channel" => "PCREDIT"}
+       ],
+       refund_fee: "0.01",
+       send_back_fee: "0.01",
+       trade_no: "2019090522001434900578283547"
+     },
+     sign: "xxx"
+   }}
+  """
+  def refund(server, args), do: GenServer.call(server, {:refund, args})
 
   @doc """
   验签
@@ -170,7 +303,6 @@ defmodule Common.Aliisv.Payment do
        sign_type: Keyword.get(args, :sign_type),
        notify_url: Keyword.get(args, :notify_url, ""),
        seller_id: Keyword.get(args, :seller_id),
-       app_auth_token: Keyword.get(args, :app_auth_token, ""),
        private_key: Keyword.get(args, :private_key),
        ali_public_key: Keyword.get(args, :ali_public_key)
      }}
@@ -181,9 +313,9 @@ defmodule Common.Aliisv.Payment do
     biz_content = %{
       out_trade_no: Keyword.get(args, :out_trade_no),
       seller_id: state.seller_id,
-      buyer_id: Keyword.get(args, :buyer_id),
-      total_amount: to_string(Keyword.get(args, :total_amount) / 100),
-      discountable_amount: Keyword.get(args, :discountable_amount, 0) / 100,
+      buyer_id: Keyword.get(args, :buyer_id, ""),
+      total_amount: price_to_string(Keyword.get(args, :total_amount, 0)),
+      discountable_amount: price_to_string(Keyword.get(args, :discountable_amount, 0)),
       subject: Keyword.get(args, :subject),
       body: Keyword.get(args, :body),
       timeout_express: Keyword.get(args, :timeout_express, "20m"),
@@ -207,9 +339,9 @@ defmodule Common.Aliisv.Payment do
     biz_content = %{
       out_trade_no: Keyword.get(args, :out_trade_no),
       seller_id: state.seller_id,
-      buyer_id: Keyword.get(args, :buyer_id),
-      total_amount: to_string(Keyword.get(args, :total_amount) / 100),
-      discountable_amount: Keyword.get(args, :discountable_amount, 0) / 100,
+      buyer_id: Keyword.get(args, :buyer_id, ""),
+      total_amount: price_to_string(Keyword.get(args, :total_amount, 0)),
+      discountable_amount: price_to_string(Keyword.get(args, :discountable_amount, 0)),
       subject: Keyword.get(args, :subject),
       body: Keyword.get(args, :body),
       timeout_express: Keyword.get(args, :timeout_express, "20m"),
@@ -221,7 +353,36 @@ defmodule Common.Aliisv.Payment do
         "alipay.trade.precreate",
         biz_content,
         Keyword.get(args, :notify_url, state.notify_url),
-        state.app_auth_token,
+        Keyword.get(args, :app_auth_token, ""),
+        state
+      )
+
+    {:reply, res, state}
+  end
+
+  @impl true
+  def handle_call({:scan_pay, args}, _from, state) do
+    biz_content = %{
+      out_trade_no: Keyword.get(args, :out_trade_no),
+      scene: "bar_code",
+      auth_code: Keyword.get(args, :auth_code, ""),
+      product_code: Keyword.get(args, :product_code, ""),
+      seller_id: state.seller_id,
+      buyer_id: Keyword.get(args, :buyer_id, ""),
+      total_amount: price_to_string(Keyword.get(args, :total_amount, 0)),
+      discountable_amount: price_to_string(Keyword.get(args, :discountable_amount, 0)),
+      subject: Keyword.get(args, :subject),
+      body: Keyword.get(args, :body),
+      timeout_express: Keyword.get(args, :timeout_express, "20m"),
+      goods_detail: Keyword.get(args, :goods_detail, [])
+    }
+
+    res =
+      Util.do_request(
+        "alipay.trade.pay",
+        biz_content,
+        Keyword.get(args, :notify_url, state.notify_url),
+        Keyword.get(args, :app_auth_token, ""),
         state
       )
 
@@ -243,7 +404,7 @@ defmodule Common.Aliisv.Payment do
         "alipay.trade.refund",
         biz_content,
         Keyword.get(args, :notify_url, state.notify_url),
-        state.app_auth_token,
+        Keyword.get(args, :app_auth_token, ""),
         state
       )
 
@@ -262,7 +423,7 @@ defmodule Common.Aliisv.Payment do
         "alipay.trade.query",
         biz_content,
         Keyword.get(args, :notify_url, state.notify_url),
-        state.app_auth_token,
+        Keyword.get(args, :app_auth_token, ""),
         state
       )
 
@@ -290,4 +451,6 @@ defmodule Common.Aliisv.Payment do
        Map.get(sign_type_map, sign_type)
      ), state}
   end
+
+  defp price_to_string(price), do: :erlang.float_to_binary(price / 100.0, decimals: 2)
 end
