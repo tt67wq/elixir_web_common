@@ -8,15 +8,15 @@ defmodule Common.Aliisv.Util do
   # 通用请求行为
   def do_request(method, biz_content, notify_url, app_auth_token, state) do
     params = %{
-      app_id: state.app_id,
-      method: method,
-      charset: "utf-8",
-      sign_type: state.sign_type,
-      timestamp: TimeTool.now(),
-      version: "1.0",
-      notify_url: notify_url,
-      app_auth_token: app_auth_token,
-      biz_content: Poison.encode!(biz_content)
+      "app_id" => state.app_id,
+      "method" => method,
+      "charset" => "utf-8",
+      "sign_type" => state.sign_type,
+      "timestamp" => TimeTool.now(),
+      "version" => "1.0",
+      "notify_url" => notify_url,
+      "app_auth_token" => app_auth_token,
+      "biz_content" => Poison.encode!(biz_content)
     }
 
     Logger.info("call alipay: #{inspect(params)}")
@@ -32,10 +32,7 @@ defmodule Common.Aliisv.Util do
              headers
            ),
          %HTTPoison.Response{body: resp_body} <- resp do
-      {:ok,
-       resp_body
-       |> Poison.decode!()
-       |> Format.stringkey2atom()}
+      Poison.decode(resp_body)
     else
       _ -> {:error, "request error"}
     end

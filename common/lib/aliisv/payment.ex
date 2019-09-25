@@ -47,8 +47,8 @@ defmodule Common.Aliisv.Payment do
 
   ## Example
   iex> Common.Aliisv.Payment.create(:aliisv, 
-    out_trade_no: "test134",    
-    app_auth_token: "201905BBc2756c2e07b144ce8dbc746a48177X09",
+    out_trade_no: "test133",    
+    app_auth_token: "201909BBa2c7b81e394d4127b03083ce29decX80",
     buyer_id: "2088202596034906",
     total_amount: 10,
     discount_amount: 0,
@@ -57,14 +57,14 @@ defmodule Common.Aliisv.Payment do
   )
   {:ok,
    %{
-     alipay_trade_create_response: %{
-       code: "10000",
-       msg: "Success",
-       out_trade_no: "test134",
-       trade_no: "2019090522001434900576854732"
+     "alipay_trade_create_response" => %{
+       "code" => "10000",
+       "msg" => "Success",
+       "out_trade_no" => "test133",
+       "trade_no" => "2019092022001434900554038366"
      },
-     sign: "xxx"
-   }}
+     "sign" => "xxx"
+   }} 
   """
   def create(server, args) do
     GenServer.call(server, {:create, args})
@@ -72,6 +72,7 @@ defmodule Common.Aliisv.Payment do
 
   @doc """
   下单生成待支付链接
+  参考文档：https://docs.open.alipay.com/api_1/koubei.trade.order.precreate
 
   * server - 服务名
   * args
@@ -89,7 +90,7 @@ defmodule Common.Aliisv.Payment do
 
   iex> Common.Aliisv.Payment.precreate(:aliisv, 
     out_trade_no: "test135",    
-    app_auth_token: "201905BBc2756c2e07b144ce8dbc746a48177X09",
+    app_auth_token: "201909BBa2c7b81e394d4127b03083ce29decX80",
     total_amount: 10,
     discount_amount: 0,
     subject: "测试单",
@@ -97,13 +98,13 @@ defmodule Common.Aliisv.Payment do
   )
   {:ok,
    %{
-     alipay_trade_precreate_response: %{
-       code: "10000",
-       msg: "Success",
-       out_trade_no: "test135",
-       qr_code: "https://qr.alipay.com/bax082708jnbruc5qj8u800c"
+     "alipay_trade_precreate_response" => %{
+       "code" => "10000",
+       "msg" => "Success",
+       "out_trade_no" => "test135",
+       "qr_code" => "https://qr.alipay.com/bax06108fsv0jl1vbseb001d"
      },
-     sign: "tPVvo0LZkAIlUP4rCQ9J7Rj5eH9wkXT5a31Z/TJgL8vsb3u/lL3tvudc2h5Fi7Pgc9wndCgY8WI4Mcob66Isr8otU7IfvQ0k13p0LgHyTd481yW23AVZfGIPpEb93EU5n92rXaNQ46Chq6y1+41RlobvbAQG88lBiPp1pZGeBlM="
+     "sign" => "xxx"
    }}
   """
   def precreate(server, args), do: GenServer.call(server, {:precreate, args})
@@ -133,57 +134,28 @@ defmodule Common.Aliisv.Payment do
   iex> Common.Aliisv.Payment.scan_pay(:aliisv, 
     out_trade_no: "test137",
     auth_code: "282278693772404227",
-    app_auth_token: "201905BBc2756c2e07b144ce8dbc746a48177X09",
+    app_auth_token: "201909BBa2c7b81e394d4127b03083ce29decX80",
     total_amount: 10    ,
     discount_amount: 0,
     subject: "测试单",
     body: "测试测试"
   )
   {:ok,
-  %{
-    alipay_trade_pay_response: %{
-      buyer_logon_id: "tt6***@126.com",
-      buyer_pay_amount: "0.10",
-      buyer_user_id: "2088202596034906",
-      code: "10000",
-      fund_bill_list: [%{"amount" => "0.10", "fund_channel" => "PCREDIT"}],
-      gmt_payment: "2019-09-05 13:24:43",
-      invoice_amount: "0.10",
-      msg: "Success",
-      out_trade_no: "test137",
-      point_amount: "0.00",
-      receipt_amount: "0.10",
-      total_amount: "0.10",
-      trade_no: "2019090522001434900578700599"
-    },
-    sign: "xxx"
-  }}
-
-  iex> Common.Aliisv.Payment.scan_pay(:aliisv, 
-    out_trade_no: "test138",
-    auth_code: "282278693772404222",
-    app_auth_token: "201905BBc2756c2e07b144ce8dbc746a48177X09",
-    total_amount: 200000,
-    discount_amount: 0,
-    subject: "测试单",
-    body: "测试测试"
-  )
-  {:ok,
    %{
-     alipay_trade_pay_response: %{
-       buyer_logon_id: "tt6***@126.com",
-       buyer_pay_amount: "0.00",
-       buyer_user_id: "2088202596034906",
-       code: "10003",
-       invoice_amount: "0.00",
-       msg: " order success pay inprocess",
-       out_trade_no: "test138",
-       point_amount: "0.00",
-       receipt_amount: "0.00",
-       total_amount: "2000.00",
-       trade_no: "2019090522001434900578804384"
+     "alipay_trade_pay_response" => %{
+       "buyer_logon_id" => "tt6***@126.com",
+       "buyer_pay_amount" => "0.00",
+       "buyer_user_id" => "2088202596034906",
+       "code" => "10003",
+       "invoice_amount" => "0.00",
+       "msg" => " order success pay inprocess",
+       "out_trade_no" => "test137",
+       "point_amount" => "0.00",
+       "receipt_amount" => "0.00",
+       "total_amount" => "0.10",
+       "trade_no" => "2019092022001434900552365166"
      },
-     sign: "r9tuLTWGXmzW29goe4dvv9SLp7Mln7gab/Mh6MTCEopMDRf04RYE6zbtWgbK9xWdNI4o6+PUjLe34gXZkwC789+mqYvjuMf5M606NjcBDsLt2aq9ho4KwyD1bjX2vhkbBuS3tue7WL/ncHv0DbCHz7eNjzt2eacGM/h2ybLSrC0="
+     "sign" => "xxx"
    }}
 
   """
@@ -191,6 +163,7 @@ defmodule Common.Aliisv.Payment do
 
   @doc """
   查询订单
+  参考文档：https://docs.open.alipay.com/api_1/koubei.trade.itemorder.query
 
   * server - 服务名
   * args
@@ -201,51 +174,29 @@ defmodule Common.Aliisv.Payment do
   ## Examples
 
   iex> Common.Aliisv.Payment.query(:aliisv, 
-     app_auth_token: "201905BBc2756c2e07b144ce8dbc746a48177X09", 
+     app_auth_token: "201909BBa2c7b81e394d4127b03083ce29decX80", 
      trade_no: "2019090522001434900576854732"
   )
   {:ok,
    %{
-     alipay_trade_query_response: %{
-       buyer_logon_id: "tt6***@126.com",
-       buyer_pay_amount: "0.00",
-       buyer_user_id: "2088202596034906",
-       code: "10000",
-       invoice_amount: "0.00",
-       msg: "Success",
-       out_trade_no: "test134",
-       point_amount: "0.00",
-       receipt_amount: "0.00",
-       total_amount: "0.10",
-       trade_no: "2019090522001434900576854732",
-       trade_status: "WAIT_BUYER_PAY"
+     "alipay_trade_query_response" => %{
+       "buyer_pay_amount" => "0.00",
+       "code" => "40004",
+       "invoice_amount" => "0.00",
+       "msg" => "Business Failed",
+       "point_amount" => "0.00",
+       "receipt_amount" => "0.00",
+       "sub_code" => "ACQ.TRADE_NOT_EXIST",
+       "sub_msg" => "交易不存在"
      },
-     sign: "xxx"
-   }}
-
-  iex> Common.Aliisv.Payment.query(:aliisv, 
-     app_auth_token: "201905BBc2756c2e07b144ce8dbc746a48177X09", 
-     trade_no: "2019090522001434900576854733"
-  )
-  {:ok,
-   %{
-     alipay_trade_query_response: %{
-       buyer_pay_amount: "0.00",
-       code: "40004",
-       invoice_amount: "0.00",
-       msg: "Business Failed",
-       point_amount: "0.00",
-       receipt_amount: "0.00",
-       sub_code: "ACQ.TRADE_NOT_EXIST",
-       sub_msg: "交易不存在"
-     },
-     sign: "xxx"
+     "sign" => "xxx" 
    }}
   """
   def query(server, args), do: GenServer.call(server, {:query, args})
 
   @doc """
   退款
+  参考文档：https://docs.open.alipay.com/api_1/koubei.trade.itemorder.refund
 
   * server - 服务名
   * args
@@ -259,30 +210,11 @@ defmodule Common.Aliisv.Payment do
   ## Examples
 
   iex> Common.Aliisv.Payment.refund(:aliisv, 
-         app_auth_token: "201905BBc2756c2e07b144ce8dbc746a48177X09",
-	 out_trade_no: "test135",
-	 refund_amount: 1,
-	 refund_reason: "test"
+         app_auth_token: "201909BBa2c7b81e394d4127b03083ce29decX80",
+  out_trade_no: "test135",
+  refund_amount: 1,
+  refund_reason: "test"
   )
-  {:ok,
-   %{
-     alipay_trade_refund_response: %{
-       buyer_logon_id: "tt6***@126.com",
-       buyer_user_id: "2088202596034906",
-       code: "10000",
-       fund_change: "Y",
-       gmt_refund_pay: "2019-09-05 11:28:16",
-       msg: "Success",
-       out_trade_no: "test135",
-       refund_detail_item_list: [
-  %{"amount" => "0.01", "fund_channel" => "PCREDIT"}
-       ],
-       refund_fee: "0.01",
-       send_back_fee: "0.01",
-       trade_no: "2019090522001434900578283547"
-     },
-     sign: "xxx"
-   }}
   """
   def refund(server, args), do: GenServer.call(server, {:refund, args})
 
@@ -291,6 +223,22 @@ defmodule Common.Aliisv.Payment do
   """
   @spec verify(atom, %{required(String.t()) => String.t()}) :: {:ok, boolean}
   def verify(server, params), do: GenServer.call(server, {:verify, params})
+
+  @doc """
+  换取应用授权令牌
+  参考文档: https://docs.open.alipay.com/api_9/alipay.open.auth.token.app
+
+  * args
+    * grant_type    - authorization_code表示换取app_auth_token, refresh_token表示刷新app_auth_token
+    * code          - 授权码，如果grant_type的值为authorization_code。该值必须填写
+    * refresh_token - 刷新令牌，如果grant_type值为refresh_token。该值不能为空
+
+  ## Examples
+
+  iex> Common.Aliisv.Payment.auth_token(:aliisv, grant_type: "authorization_code", code: "Pd249b0134ca84db494338cc958f4590")
+
+  """
+  def auth_token(server, args), do: GenServer.call(server, {:auth_token, args})
 
   ####################################
   ###### SERVER CALLBACKS HEAD
@@ -450,6 +398,26 @@ defmodule Common.Aliisv.Payment do
        state.ali_public_key,
        Map.get(sign_type_map, sign_type)
      ), state}
+  end
+
+  @impl true
+  def handle_call({:auth_token, args}, _from, state) do
+    biz_content = %{
+      grant_type: Keyword.get(args, :grant_type, "authorization_code"),
+      code: Keyword.get(args, :code, ""),
+      refresh_token: Keyword.get(args, :refresh_token, "")
+    }
+
+    res =
+      Util.do_request(
+        "alipay.open.auth.token.app",
+        biz_content,
+        Keyword.get(args, :notify_url, state.notify_url),
+        Keyword.get(args, :app_auth_token, ""),
+        state
+      )
+
+    {:reply, res, state}
   end
 
   defp price_to_string(price), do: :erlang.float_to_binary(price / 100.0, decimals: 2)

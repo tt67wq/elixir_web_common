@@ -65,17 +65,17 @@ defmodule Common.Wxisv.Payment do
   iex> Common.Wxisv.Payment.unifiedorder(:wxisv, args)
   {:ok,
    %{
-     appid: "wxa06cadd4aa4ad40f",
-     code_url: "weixin://wxpay/bizpayurl?pr=EbeGUSZ",
-     mch_id: "1424355602",
-     nonce_str: "QFmzTNeisSXriBNs",
-     prepay_id: "wx0316512846043232656b28471971382700",
-     result_code: "SUCCESS",
-     return_code: "SUCCESS",
-     return_msg: "OK",
-     sign: "8171B33BA395DD52F30F495DC74155E4",
-     sub_mch_id: "1487469312",
-     trade_type: "NATIVE"
+     "appid" => "wxa06cadd4aa4ad40f",
+     "code_url" => "weixin://wxpay/bizpayurl?pr=FeHLlME",
+     "mch_id" => "1424355602",
+     "nonce_str" => "e3v5I6FwBqtW4rb4",
+     "prepay_id" => "wx2009114014870632656b28471581764600",
+     "result_code" => "SUCCESS",
+     "return_code" => "SUCCESS",
+     "return_msg" => "OK",
+     "sign" => "AF127B47690E83A02D1DC702FAE7E310",
+     "sub_mch_id" => "1487469312",
+     "trade_type" => "NATIVE"
    }}
   """
   def unifiedorder(server, args) do
@@ -108,19 +108,18 @@ defmodule Common.Wxisv.Payment do
   ]
   iex> Common.Wxisv.Payment.micropay(:wxisv, args)
   {:ok,
-    %{
-      appid: "wxa06cadd4aa4ad40f",
-      err_code: "AUTH_CODE_INVALID",
-      err_code_des: "101 付款码无效，请重新扫码",
-      mch_id: "1424355602",
-      nonce_str: "ehAjAkUkEAjCNnHp",
-      result_code: "FAIL",
-      return_code: "SUCCESS",
-      return_msg: "OK",
-      sign: "C1F0ED4911F4C61DFE2C39AF661BC232",
-      sub_mch_id: "1487469312"
-    }
-  }
+   %{
+     "appid" => "wxa06cadd4aa4ad40f",
+     "err_code" => "AUTH_CODE_INVALID",
+     "err_code_des" => "101 付款码无效，请重新扫码",
+     "mch_id" => "1424355602",
+     "nonce_str" => "zRbdGjg6PaTYpchP",
+     "result_code" => "FAIL",
+     "return_code" => "SUCCESS",
+     "return_msg" => "OK",
+     "sign" => "EEF0B48ABC7A642B68740690308EFC1D",
+     "sub_mch_id" => "1487469312"
+   }}
   """
   def micropay(server, args) do
     GenServer.call(server, {:micropay, args})
@@ -139,31 +138,30 @@ defmodule Common.Wxisv.Payment do
 
   iex> Common.Wxisv.Payment.query(:wxisv, [sub_mch_id: "1487469312", out_trade_no: "s4stest1235"])
   {:ok,
-  %{
-     appid: "wxa06cadd4aa4ad40f",
-     attach: "",
-     bank_type: "CFT",
-     cash_fee: "1",
-     cash_fee_type: "CNY",
-     fee_type: "CNY",
-     is_subscribe: "Y",
-     mch_id: "1424355602",
-     nonce_str: "2irt2TRYpGeIvVPC",
-     openid: "oKrTMwYZRSB1e4zBpvaZy6UXmzpI",
-     out_trade_no: "s4stest1235",
-     result_code: "SUCCESS",
-     return_code: "SUCCESS",
-     return_msg: "OK",
-     sign: "52A4E89376094256CF5A88E46F3FC2F0",
-     sub_mch_id: "1487469312",
-     time_end: "20190829115402",
-     total_fee: "1",
-     trade_state: "SUCCESS",
-     trade_state_desc: "支付成功",
-     trade_type: "MICROPAY",
-     transaction_id: "4200000372201908290017282113"
-  }}
-
+   %{
+     "appid" => "wxa06cadd4aa4ad40f",
+     "attach" => "",
+     "bank_type" => "CFT",
+     "cash_fee" => "1",
+     "cash_fee_type" => "CNY",
+     "fee_type" => "CNY",
+     "is_subscribe" => "Y",
+     "mch_id" => "1424355602",
+     "nonce_str" => "6eeMWInhebGen4ux",
+     "openid" => "oKrTMwYZRSB1e4zBpvaZy6UXmzpI",
+     "out_trade_no" => "s4stest1235",
+     "result_code" => "SUCCESS",
+     "return_code" => "SUCCESS",
+     "return_msg" => "OK",
+     "sign" => "C06DEE92A78B2FDA689B425CA917BC7F",
+     "sub_mch_id" => "1487469312",
+     "time_end" => "20190829115402",
+     "total_fee" => "1",
+     "trade_state" => "SUCCESS",
+     "trade_state_desc" => "支付成功",
+     "trade_type" => "MICROPAY",
+     "transaction_id" => "4200000372201908290017282113"
+   }}
   """
   def query(server, args) do
     GenServer.call(server, {:query, args})
@@ -191,27 +189,27 @@ defmodule Common.Wxisv.Payment do
   iex> Common.Wxisv.Payment.refund(:wxisv, args)
   {:ok,
    %{
-     appid: "wxa06cadd4aa4ad40f",
-     cash_fee: "10",
-     cash_refund_fee: "1",
-     coupon_refund_count: "0",
-     coupon_refund_fee: "0",
-     mch_id: "1424355602",
-     nonce_str: "cqmkJaMJrjzl1wwH",
-     out_refund_no: "EL7gVvPTqg9M",
-     out_trade_no: "test112",
-     refund_channel: "",
-     refund_fee: "1",
-     refund_id: "50000101662019090211990249580",
-     result_code: "SUCCESS",
-     return_code: "SUCCESS",
-     return_msg: "OK",
-     sign: "D3810FFE7A34FC38FA8DCAA99EDFA1E3",
-     sub_mch_id: "1487469312",
-     total_fee: "10",
-     transaction_id: "4200000381201909026741897025"
-   }}
-
+      "appid" => "wxa06cadd4aa4ad40f",
+      "cash_fee" => "10",
+      "cash_refund_fee" => "1",
+      "coupon_refund_count" => "0",
+      "coupon_refund_fee" => "0",
+      "mch_id" => "1424355602",
+      "nonce_str" => "cqmkJaMJrjzl1wwH",
+      "out_refund_no" => "EL7gVvPTqg9M",
+      "out_trade_no" => "test112",
+      "refund_channel" => %{},
+      "refund_fee" => "1",
+      "refund_id" => "50000101662019090211990249580",
+      "result_code" => "SUCCESS",
+      "return_code" => "SUCCESS",
+      "return_msg" => "OK",
+      "sign" => "D3810FFE7A34FC38FA8DCAA99EDFA1E3",
+      "sub_mch_id" => "1487469312",
+      "total_fee" => "10",
+      "transaction_id" => "4200000381201909026741897025"
+    }
+  }
   """
   def refund(server, args) do
     GenServer.call(server, {:refund, args})
@@ -230,16 +228,15 @@ defmodule Common.Wxisv.Payment do
   iex> Common.Wxisv.Payment.close(:wxisv, sub_mch_id: "1487469312", out_trade_no: "OD201909031737204363")
   {:ok,
    %{
-     appid: "wxa06cadd4aa4ad40f",
-     mch_id: "1424355602",
-     nonce_str: "ntATMURgcF5jndJr",
-     result_code: "SUCCESS",
-     return_code: "SUCCESS",
-     return_msg: "OK",
-     sign: "AA2AD1F8D9EE2BBA6EC7640ED21A28CD",
-     sub_mch_id: "1487469312"
+     "appid" => "wxa06cadd4aa4ad40f",
+     "mch_id" => "1424355602",
+     "nonce_str" => "op6DLMhUJZgk8OWb",
+     "result_code" => "SUCCESS",
+     "return_code" => "SUCCESS",
+     "return_msg" => "OK",
+     "sign" => "41B49C7B224485AF23653CDDCEDF8ADE",
+     "sub_mch_id" => "1487469312"
    }}
-
   """
   def close(server, args) do
     GenServer.call(server, {:close, args})
@@ -253,25 +250,24 @@ defmodule Common.Wxisv.Payment do
   ## Examples
 
   iex> params = %{
-    appid: "wxa06cadd4aa4ad40f",
-    bank_type: "CFT",
-    cash_fee: "10",
-    fee_type: "CNY",
-    is_subscribe: "Y",
-    mch_id: "1424355602",
-    nonce_str: "7HKXdkhXHfXXWQ6J",
-    openid: "oKrTMwYZRSB1e4zBpvaZy6UXmzpI",
-    out_trade_no: "OD201909041001229424",
-    result_code: "SUCCESS",
-    return_code: "SUCCESS",
-    sign: "B0DFB4AE298220A71298A19D55D65B25",
-    sub_mch_id: "1487469312",
-    time_end: "20190904100236",
-    total_fee: "10",
-    trade_type: "NATIVE",
-    transaction_id: "4200000391201909043698367230"
+    "appid" => "wxa06cadd4aa4ad40f",
+    "bank_type" => "CFT",
+    "cash_fee" => "10",
+    "fee_type" => "CNY",
+    "is_subscribe" => "Y",
+    "mch_id" => "1424355602",
+    "nonce_str" => "7HKXdkhXHfXXWQ6J",
+    "openid" => "oKrTMwYZRSB1e4zBpvaZy6UXmzpI",
+    "out_trade_no" => "OD201909041001229424",
+    "result_code" => "SUCCESS",
+    "return_code" => "SUCCESS",
+    "sign" => "B0DFB4AE298220A71298A19D55D65B25",
+    "sub_mch_id" => "1487469312",
+    "time_end" => "20190904100236",
+    "total_fee" => "10",
+    "trade_type" => "NATIVE",
+    "transaction_id" => "4200000391201909043698367230"
   }
-
   iex> Common.Wxisv.Payment.verify(:wxisv, params)
   true
   """
