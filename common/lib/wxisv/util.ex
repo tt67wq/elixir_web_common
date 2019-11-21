@@ -1,6 +1,7 @@
 defmodule Common.Wxisv.Util do
   @moduledoc false
   alias Common.{Crypto, Format, Xml}
+  require Logger
 
   @gateway "https://api.mch.weixin.qq.com"
 

@@ -26,10 +26,8 @@ defmodule Common.RedisLock do
   """
   require Logger
   use Supervisor
-
   alias Common.Crypto
 
-  @pool_size 2
   @release_script ~S"""
   if redis.call("get",KEYS[1]) == ARGV[1] then
     return redis.call("del", KEYS[1])
@@ -41,30 +39,16 @@ defmodule Common.RedisLock do
   #### redis part ####
 
   def start_link(args) do
-    name = Keyword.get(args, :name, __MODULE__)
-    Supervisor.start_link(__MODULE__, args, name: name)
+    Supervisor.start_link(__MODULE__, args, name: __MODULE__)
   end
 
   @impl true
   def init(args) do
-    Supervisor.init(get_workers(args), strategy: :one_for_one)
-  end
+    children = [
+      {Redix, args}
+    ]
 
-  defp get_workers(args) do
-    for i <- 0..(@pool_size - 1) do
-      new_args = Keyword.update!(args, :name, fn x -> :"#{x}_#{i}" end)
-
-      Supervisor.child_spec({Redix, new_args}, id: {RedisLock, Crypto.random_string(5)})
-    end
-  end
-
-  defp command(name, command) do
-    Redix.command(:"#{name}_#{random_index()}", command)
-  end
-
-  defp random_index do
-    0..(@pool_size - 1)
-    |> Enum.random()
+    Supervisor.init(children, strategy: :one_for_one)
   end
 
   #### lock part ####
@@ -72,7 +56,7 @@ defmodule Common.RedisLock do
   defp helper_hash(), do: Crypto.sha(@release_script) |> Base.encode16(case: :lower)
 
   def install_script(name) do
-    case command(name, ["SCRIPT", "LOAD", @release_script]) do
+    case Redix.command(name, ["SCRIPT", "LOAD", @release_script]) do
       {:ok, val} ->
         Logger.info(val)
 
@@ -111,7 +95,7 @@ defmodule Common.RedisLock do
   end
 
   defp lock(name, resource, value, ttl) do
-    case command(name, ["SET", resource, value, "NX", "PX", to_string(ttl)]) do
+    case Redix.command(name, ["SET", resource, value, "NX", "PX", to_string(ttl)]) do
       {:ok, "OK"} ->
         :ok
 
@@ -139,6 +123,6 @@ defmodule Common.RedisLock do
   """
   @spec unlock(atom(), String.t(), String.t()) :: {:ok, integer()}
   def unlock(name, resource, secret) do
-    command(name, ["EVALSHA", helper_hash(), "1", resource, secret])
+    Redix.command(name, ["EVALSHA", helper_hash(), "1", resource, secret])
   end
 end

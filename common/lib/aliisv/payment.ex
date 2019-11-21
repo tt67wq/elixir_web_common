@@ -173,10 +173,7 @@ defmodule Common.Aliisv.Payment do
 
   ## Examples
 
-  iex> Common.Aliisv.Payment.query(:aliisv, 
-     app_auth_token: "201909BBa2c7b81e394d4127b03083ce29decX80", 
-     trade_no: "2019090522001434900576854732"
-  )
+  iex> Common.Aliisv.Payment.query(:aliisv, app_auth_token: "201909BBa2c7b81e394d4127b03083ce29decX80", trade_no: "2019101022001434900569339350")
   {:ok,
    %{
      "alipay_trade_query_response" => %{
@@ -210,11 +207,29 @@ defmodule Common.Aliisv.Payment do
   ## Examples
 
   iex> Common.Aliisv.Payment.refund(:aliisv, 
-         app_auth_token: "201909BBa2c7b81e394d4127b03083ce29decX80",
-  out_trade_no: "test135",
-  refund_amount: 1,
-  refund_reason: "test"
+    app_auth_token: "201909BBa2c7b81e394d4127b03083ce29decX80",
+    out_trade_no: "test135",
+    refund_amount: 1,
+    refund_reason: "test"
   )
+  %{
+    "alipay_trade_refund_response" => %{
+      "buyer_logon_id" => "tt6***@126.com",
+      "buyer_user_id" => "2088202596034906",
+      "code" => "10000",
+      "fund_change" => "Y",
+      "gmt_refund_pay" => "2019-10-15 16:47:58",
+      "msg" => "Success",
+      "out_trade_no" => "OD201910151643581919",
+      "refund_detail_item_list" => [
+  %{"amount" => "0.01", "fund_channel" => "PCREDIT"}
+      ],
+      "refund_fee" => "0.03",
+      "send_back_fee" => "0.01",
+      "trade_no" => "2019101522001434901401309763"
+    },
+    "sign" => "xxx"
+  }
   """
   def refund(server, args), do: GenServer.call(server, {:refund, args})
 
@@ -271,7 +286,7 @@ defmodule Common.Aliisv.Payment do
     }
 
     res =
-      Util.do_request(
+      Util.get_request(
         "alipay.trade.create",
         biz_content,
         Keyword.get(args, :notify_url, state.notify_url),
@@ -297,7 +312,7 @@ defmodule Common.Aliisv.Payment do
     }
 
     res =
-      Util.do_request(
+      Util.get_request(
         "alipay.trade.precreate",
         biz_content,
         Keyword.get(args, :notify_url, state.notify_url),
@@ -326,7 +341,7 @@ defmodule Common.Aliisv.Payment do
     }
 
     res =
-      Util.do_request(
+      Util.get_request(
         "alipay.trade.pay",
         biz_content,
         Keyword.get(args, :notify_url, state.notify_url),
@@ -348,7 +363,7 @@ defmodule Common.Aliisv.Payment do
     }
 
     res =
-      Util.do_request(
+      Util.get_request(
         "alipay.trade.refund",
         biz_content,
         Keyword.get(args, :notify_url, state.notify_url),
@@ -367,7 +382,7 @@ defmodule Common.Aliisv.Payment do
     }
 
     res =
-      Util.do_request(
+      Util.get_request(
         "alipay.trade.query",
         biz_content,
         Keyword.get(args, :notify_url, state.notify_url),
@@ -383,7 +398,7 @@ defmodule Common.Aliisv.Payment do
     {sign, params} = Map.pop(params, "sign")
     {sign_type, params} = Map.pop(params, "sign_type")
 
-    sign_type_map = %{"RSA" => :sha, "SA2" => :sha256}
+    sign_type_map = %{"RSA" => :sha, "RSA2" => :sha256}
 
     string2sign =
       params
@@ -409,7 +424,7 @@ defmodule Common.Aliisv.Payment do
     }
 
     res =
-      Util.do_request(
+      Util.get_request(
         "alipay.open.auth.token.app",
         biz_content,
         Keyword.get(args, :notify_url, state.notify_url),

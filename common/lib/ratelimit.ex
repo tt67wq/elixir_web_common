@@ -5,8 +5,10 @@ defmodule Common.Ratelimit do
   ## Config Example
   ```
   config :my_app, :ratelimit,
+    name: :ratelimit,
     host: "localhost",
     port: 6379
+
   ```
 
   ## Usage
@@ -25,8 +27,7 @@ defmodule Common.Ratelimit do
   """
 
   use Supervisor
-  alias Common.{Crypto, TimeTool}
-  @pool_size 5
+  alias Common.TimeTool
 
   #### redis part ####
 
@@ -37,78 +38,43 @@ defmodule Common.Ratelimit do
   ##### callback
   @impl true
   def init(args) do
-    :ets.new(:rate_pool, [
-      :set,
-      :named_table,
-      :public,
-      read_concurrency: true,
-      write_concurrency: true
-    ])
+    children = [
+      {Redix, args}
+    ]
 
-    Supervisor.init(get_workers(args), strategy: :one_for_one)
-  end
-
-  defp get_workers(args) do
-    for i <- 0..(@pool_size - 1) do
-      args = Keyword.put(args, :name, :"ratelimit_#{i}")
-      Supervisor.child_spec({Redix, args}, id: {Ratelimit, Crypto.random_string(5)})
-    end
-  end
-
-  defp command(command) do
-    Redix.command(:"ratelimit_#{random_index()}", command)
-  end
-
-  defp random_index do
-    0..(@pool_size - 1)
-    |> Enum.random()
+    Supervisor.init(children, strategy: :one_for_one)
   end
 
   #### real part ####
-  @spec register(atom(), integer(), integer()) :: boolean()
-  @doc """
-  register a ratelimiter, save it in ets
-
-  * `name` - server name
-  * `rate` - how many milliseconds does it take to generate a token
-  * `size` - maximum of the token pool
-
-  ## Examples
-
-  iex> Common.Ratelimit.register(:limiter, 1000, 10)
-  true
-  """
-  def register(name, rate, size) do
-    :ets.insert(:rate_pool, {name, rate, size})
-  end
-
-  @spec take_one(atom()) :: boolean()
+  @spec take_one(atom(), String.t(), integer, integer) :: boolean()
   @doc """
   take a token from pool, if failed, means ratelimit is working
 
-  * `name` - name of the server
+  * `server` - redis server process
+  * `name`   - name of the limiter
+  * `rate`   - how many milliseconds does it take to generate a token
+  * `size`   - maximum of the token pool
 
   ## Examples
 
-  iex> Common.Ratelimit.take_one(:limiter)
+  iex> Common.Ratelimit.take_one(:ratelimit, :limiter, 1000, 200)
   true
   """
-  def take_one(name) do
-    with [{name, rate, size}] <- :ets.lookup(:rate_pool, name),
-         ts <- TimeTool.timestamp(:milli_seconds),
-         {:ok, od} <- command(["GET", "limiter:#{name}"]),
-         od <- fix_num(od),
-         counter <- div(ts - od, rate) do
+  def take_one(server, name, rate, size) do
+    with ts <- TimeTool.timestamp(:milli_seconds),
+         {:ok, lt} <- Redix.command(server, ["GET", "limiter:#{name}"]),
+         lt <- fix_num(lt),
+         counter <- div(ts - lt, rate) do
       cond do
         counter <= 0 ->
           false
 
         counter >= size ->
-          command(["SET", "limiter:#{name}", "#{ts - (size - 1) * rate}"])
+          Redix.command(server, ["SET", "limiter:#{name}", "#{ts - (size - 1) * rate}"])
           true
 
         :else ->
-          command(["SET", "limiter:#{name}", "#{od + rate}"])
+          Redix.command(server, ["SET", "limiter:#{name}", "#{lt + rate}"])
           true
       end
     end

@@ -25,7 +25,7 @@ defmodule Common.Format do
 
   @doc """
   map key从string转为atom
-  ps: 当params的key不确定的时候慎用，防止大量产出atom
+  NOTE!!!!: 当params的key不确定的时候慎用，防止大量产出atom, atom不参与gc，会导致atom表用尽
 
   * params - string key map
 

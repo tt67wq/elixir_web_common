@@ -20,6 +20,9 @@ defmodule Common.Crypto do
   @spec sha256(String.t()) :: binary()
   def sha256(plaintext), do: :crypto.hash(:sha256, plaintext)
 
+  @spec hmac_sha256(String.t(), String.t()) :: binary()
+  def hmac_sha256(key, plaintext), do: :crypto.hmac(:sha256, key, plaintext)
+
   @doc """
   generate random string
   ## Example
@@ -108,5 +111,4 @@ defmodule Common.Crypto do
     ]
     |> Enum.reject(fn {_k, v} -> v == nil end)
   end
-
 end

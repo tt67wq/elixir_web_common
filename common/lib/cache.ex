@@ -36,38 +36,21 @@ defmodule Common.RedisCache do
   ```
 
   """
-  use Supervisor
-  alias Common.Crypto
-  @behaviour Common.Cache
-  @pool_size 5
 
-  #### redis part ####
+  @behaviour Common.Cache
 
   def start_link(args) do
-    name = Keyword.get(args, :name, __MODULE__)
-    Supervisor.start_link(__MODULE__, args, name: name)
+    Redix.start_link(args)
   end
 
-  ##### callback
-  @impl true
-  def init(args) do
-    Supervisor.init(get_workers(args), strategy: :one_for_one)
-  end
-
-  defp get_workers(args) do
-    for i <- 0..(@pool_size - 1) do
-      args = Keyword.update!(args, :name, fn x -> :"#{x}_#{i}" end)
-      Supervisor.child_spec({Redix, args}, id: {RedisCache, Crypto.random_string(5)})
-    end
-  end
-
-  defp command(name, command) do
-    Redix.command(:"#{name}_#{random_index()}", command)
-  end
-
-  defp random_index do
-    0..(@pool_size - 1)
-    |> Enum.random()
+  def child_spec(opts) do
+    %{
+      id: __MODULE__,
+      start: {__MODULE__, :start_link, [opts]},
+      type: :worker,
+      restart: :permanent,
+      shutdown: 500
+    }
   end
 
   #### cache part ####
@@ -76,9 +59,9 @@ defmodule Common.RedisCache do
   @doc """
   add a new cache key/value
 
-  * `name`   - cache service name, genserver name
-  * `key`    - key of cache
-  * `value`  - value of cache
+  * `name` - cache service name, genserver name
+  * `key`  - key of cache
+  * `value` - value of cache
   * `expire` - how many seconds this cache pair can survive 
 
   ## Examples
@@ -87,7 +70,7 @@ defmodule Common.RedisCache do
   {:ok, "OK"}
   """
   def put(name, key, value, expire) do
-    command(name, ["SETEX", key, expire, value])
+    Redix.command(name, ["SETEX", key, expire, value])
   end
 
   @impl Common.Cache
@@ -95,7 +78,7 @@ defmodule Common.RedisCache do
   get cache value by key
 
   * `name` - cache service name, genserver name
-  * `key`  - key of cache
+  * `key` - key of cache
 
   ## Examples
 
@@ -103,7 +86,7 @@ defmodule Common.RedisCache do
   {:ok, "bar"}
   """
   def get(name, key) do
-    command(name, ["GET", key])
+    Redix.command(name, ["GET", key])
   end
 
   def get!(name, key) do
@@ -118,7 +101,7 @@ defmodule Common.RedisCache do
   check if key in cache table
 
   * `name` - cache service name, genserver name
-  * `key`  - key of cache
+  * `key` - key of cache
 
   ## Examples
 
@@ -126,7 +109,7 @@ defmodule Common.RedisCache do
   false
   """
   def exist?(name, key) do
-    case command(name, ["GET", key]) do
+    case Redix.command(name, ["GET", key]) do
       {:ok, nil} -> false
       _ -> true
     end
@@ -137,7 +120,7 @@ defmodule Common.RedisCache do
   drop a cache pair
 
   * `name` - cache service name, genserver name
-  * `key`  - key of cache
+  * `key` - key of cache
 
   ## Examples
 
@@ -145,7 +128,7 @@ defmodule Common.RedisCache do
   {:ok, 1}
   """
   def del(name, key) do
-    command(name, ["DEL", key])
+    Redix.command(name, ["DEL", key])
   end
 end
 
@@ -194,9 +177,9 @@ defmodule Common.EtsCache do
   @doc """
   add a new cache key/value
 
-  * `name`   - cache service name, genserver name
-  * `key`    - key of cache
-  * `value`  - value of cache
+  * `name` - cache service name, genserver name
+  * `key`  - key of cache
+  * `value` - value of cache
   * `expire` - how many seconds this cache pair can survive 
 
   ## Examples
@@ -213,7 +196,7 @@ defmodule Common.EtsCache do
   get cache value by key
 
   * `name` - cache service name, genserver name
-  * `key`  - key of cache
+  * `key` - key of cache
 
   ## Examples
 
@@ -232,7 +215,7 @@ defmodule Common.EtsCache do
   check if key in cache table
 
   * `name` - cache service name, genserver name
-  * `key`  - key of cache
+  * `key` - key of cache
 
   ## Examples
 
@@ -248,7 +231,7 @@ defmodule Common.EtsCache do
   drop a cache pair
 
   * `name` - cache service name, genserver name
-  * `key`  - key of cache
+  * `key` - key of cache
 
   ## Examples
 

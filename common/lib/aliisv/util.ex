@@ -5,8 +5,8 @@ defmodule Common.Aliisv.Util do
   require Logger
   alias Common.{TimeTool, Format}
 
-  # 通用请求行为
-  def do_request(method, biz_content, notify_url, app_auth_token, state) do
+  # http部分
+  def post_request(method, biz_content, notify_url, app_auth_token, state) do
     params = %{
       "app_id" => state.app_id,
       "method" => method,
@@ -25,12 +25,69 @@ defmodule Common.Aliisv.Util do
 
     with sign <- sign(params, state.private_key, state.sign_type),
          params <- Map.put(params, :sign, sign),
+         {biz, params} <- Map.pop(params, "biz_content"),
          req <- URI.encode_query(params),
+         body <- URI.encode_query(%{"biz_content" => biz}),
          {:ok, resp} <-
-           HTTPoison.get(
+           HTTPoison.post(
              "https://openapi.alipay.com/gateway.do?" <> req,
+             body,
              headers
            ),
+         %HTTPoison.Response{body: resp_body} <- resp do
+      Logger.info(resp_body)
+      IO.inspect(resp)
+      Poison.decode(resp_body)
+    else
+      _ -> {:error, "request error"}
+    end
+  end
+
+  def get_request(method, biz_content, notify_url, app_auth_token, state) do
+    params = %{
+      "app_id" => state.app_id,
+      "method" => method,
+      "charset" => "utf-8",
+      "sign_type" => state.sign_type,
+      "timestamp" => TimeTool.now(),
+      "version" => "1.0",
+      "notify_url" => notify_url,
+      "app_auth_token" => app_auth_token,
+      "biz_content" => Poison.encode!(biz_content)
+    }
+
+    Logger.info("call alipay: #{inspect(params)}")
+
+    with sign <- sign(params, state.private_key, state.sign_type),
+         params <- Map.put(params, :sign, sign),
+         req <- URI.encode_query(params),
+         {:ok, resp} <-
+           HTTPoison.get("https://openapi.alipay.com/gateway.do?" <> req),
+         %HTTPoison.Response{body: resp_body} <- resp do
+      Logger.info(resp_body)
+      Poison.decode(resp_body)
+    else
+      _ -> {:error, "request error"}
+    end
+  end
+
+  def get_request_flat(method, biz_content, app_auth_token, state) do
+    params = %{
+      "app_id" => state.app_id,
+      "method" => method,
+      "charset" => "utf-8",
+      "sign_type" => state.sign_type,
+      "timestamp" => TimeTool.now(),
+      "version" => "1.0",
+      "app_auth_token" => app_auth_token
+    }
+
+    with params <- Map.merge(params, biz_content),
+         sign <- sign(params, state.private_key, state.sign_type),
+         params <- Map.put(params, :sign, sign),
+         req <- URI.encode_query(params),
+         {:ok, resp} <-
+           HTTPoison.get("https://openapi.alipay.com/gateway.do?" <> req),
          %HTTPoison.Response{body: resp_body} <- resp do
       Poison.decode(resp_body)
     else

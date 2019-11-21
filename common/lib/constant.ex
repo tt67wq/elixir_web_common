@@ -50,3 +50,35 @@ defmodule Constants do
     end
   end
 end
+
+defmodule Common.Constant do
+  @moduledoc """
+  全局变量
+
+  ## Example
+
+  require Common.Constant
+  alias Common.Constant, as: Const
+
+  IO.puts(Const.xxx())
+
+  """
+
+  use Constants
+  ######### 订单相关 ##########
+
+  ## 订单状态
+  define(order_status_deleted, -1)
+  define(order_status_unpaid, 1)
+  define(order_status_canceled, 2)
+  define(order_status_paid, 3)
+  define(order_status_finished, 4)
+  define(order_status_refunded, 5)
+
+  ######### 电子眼相关 ########
+
+  define(dzy_err_carno, 1)
+  define(dzy_err_vin, 2)
+  define(dzy_err_engine, 3)
+  define(dzy_err_sys, 4)
+end
