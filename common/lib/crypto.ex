@@ -2,6 +2,10 @@ defmodule Common.Crypto do
   @moduledoc """
   加密工具
   """
+
+  @aad "IJustLikeIt"
+  @tag_length 16
+
   @doc """
   md5
   """
@@ -44,8 +48,19 @@ defmodule Common.Crypto do
   @spec aes_encrypt(String.t(), String.t(), list()) :: binary() | String.t()
   def aes_encrypt(plaintext, key, options \\ [base64: true]) do
     iv = :crypto.strong_rand_bytes(16)
-    ciphertext = :crypto.block_encrypt(:aes_cbc256, sha256(key), iv, pkcs7_pad(plaintext))
-    res = iv <> ciphertext
+
+    {ciphertext, tag} =
+      :crypto.crypto_one_time_aead(
+        :aes_256_gcm,
+        sha256(key),
+        iv,
+        pkcs7_pad(plaintext),
+        @aad,
+        @tag_length,
+        true
+      )
+
+    res = iv <> tag <> ciphertext
 
     if options[:base64], do: Base.encode64(res), else: res
   end
@@ -62,17 +77,27 @@ defmodule Common.Crypto do
   """
   @spec aes_decrypt(String.t(), String.t(), list()) :: String.t()
   def aes_decrypt(ciphertext, key, options \\ [base64: true]) do
-    {iv, target} =
+    {iv, tag, target} =
       if options[:base64] do
-        {:ok, <<iv::binary-16, target::binary>>} = Base.decode64(ciphertext)
-        {iv, target}
+        {:ok, <<iv::binary-size(16), tag::binary-size(@tag_length), target::binary>>} =
+          Base.decode64(ciphertext)
+
+        {iv, tag, target}
       else
-        <<iv::binary-16, target::binary>> = ciphertext
-        {iv, target}
+        <<iv::binary-size(16), tag::binary-size(@tag_length), target::binary>> = ciphertext
+        {iv, tag, target}
       end
 
     {:ok, plaintext} =
-      :crypto.block_decrypt(:aes_cbc256, sha256(key), iv, target)
+      :crypto.crypto_one_time_aead(
+        :aes_256_gcm,
+        sha256(key),
+        iv,
+        target,
+        @aad,
+        tag,
+        false
+      )
       |> pkcs7_unpad()
 
     plaintext
