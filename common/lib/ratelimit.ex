@@ -29,22 +29,6 @@ defmodule Common.Ratelimit do
   use Supervisor
   alias Common.TimeTool
 
-  #### redis part ####
-
-  def start_link(args) do
-    Supervisor.start_link(__MODULE__, args, name: :ratelimit)
-  end
-
-  ##### callback
-  @impl true
-  def init(args) do
-    children = [
-      {Redix, args}
-    ]
-
-    Supervisor.init(children, strategy: :one_for_one)
-  end
-
   #### real part ####
   @spec take_one(atom(), String.t(), integer, integer) :: boolean()
   @doc """
@@ -80,11 +64,6 @@ defmodule Common.Ratelimit do
     end
   end
 
-  defp fix_num(n) do
-    if n == nil do
-      0
-    else
-      String.to_integer(n)
-    end
-  end
+  defp fix_num(nil), do: 0
+  defp fix_num(n), do: String.to_integer(n)
 end

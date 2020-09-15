@@ -25,7 +25,6 @@ defmodule Common.RedisLock do
 
   """
   require Logger
-  use Supervisor
   alias Common.Crypto
 
   @release_script ~S"""
@@ -36,26 +35,11 @@ defmodule Common.RedisLock do
   end
   """
 
-  #### redis part ####
-
-  def start_link(args) do
-    Supervisor.start_link(__MODULE__, args, name: __MODULE__)
-  end
-
-  @impl true
-  def init(args) do
-    children = [
-      {Redix, args}
-    ]
-
-    Supervisor.init(children, strategy: :one_for_one)
-  end
-
   #### lock part ####
 
   defp helper_hash(), do: Crypto.sha(@release_script) |> Base.encode16(case: :lower)
 
-  def install_script(name) do
+  defp install_script(name) do
     case Redix.command(name, ["SCRIPT", "LOAD", @release_script]) do
       {:ok, val} ->
         Logger.info(val)
@@ -72,7 +56,7 @@ defmodule Common.RedisLock do
   end
 
   @doc """
-  lock a lock on a resource last for ttl millseconds, this function 
+  lock a lock on a resource last for ttl millseconds, this function
   returns a random string as the secret to unlock
 
   * `name`     - name of genserver

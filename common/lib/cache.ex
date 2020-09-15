@@ -39,20 +39,6 @@ defmodule Common.RedisCache do
 
   @behaviour Common.Cache
 
-  def start_link(args) do
-    Redix.start_link(args)
-  end
-
-  def child_spec(opts) do
-    %{
-      id: __MODULE__,
-      start: {__MODULE__, :start_link, [opts]},
-      type: :worker,
-      restart: :permanent,
-      shutdown: 500
-    }
-  end
-
   #### cache part ####
 
   @impl Common.Cache
@@ -62,7 +48,7 @@ defmodule Common.RedisCache do
   * `name` - cache service name, genserver name
   * `key`  - key of cache
   * `value` - value of cache
-  * `expire` - how many seconds this cache pair can survive 
+  * `expire` - how many seconds this cache pair can survive
 
   ## Examples
 
@@ -180,7 +166,7 @@ defmodule Common.EtsCache do
   * `name` - cache service name, genserver name
   * `key`  - key of cache
   * `value` - value of cache
-  * `expire` - how many seconds this cache pair can survive 
+  * `expire` - how many seconds this cache pair can survive
 
   ## Examples
 
